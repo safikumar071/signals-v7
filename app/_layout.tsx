@@ -19,11 +19,9 @@ import { router } from 'expo-router';
 SplashScreen.preventAutoHideAsync();
 let didRunPrepare = false;
 
-
 export default function RootLayout() {
   useFrameworkReady();
   const [isReady, setIsReady] = useState(false);
-
 
   const [fontsLoaded, fontError] = useFonts({
     'Inter-Regular': Inter_400Regular,
@@ -31,16 +29,6 @@ export default function RootLayout() {
     'Inter-SemiBold': Inter_600SemiBold,
     'Inter-Bold': Inter_700Bold,
   });
-
-  // useEffect(() => {
-  //   fetch('https://govngwsrefzqnuczhzdi.supabase.co/rest/v1/user_profiles', {
-  //     headers: {
-  //       apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
-  //     }
-  //   })
-  //     .then(res => console.log('[TEST after mount]', res.status))
-  //     .catch(err => console.error('[TEST fetch error]', err));
-  // }, []);
 
   useEffect(() => {
     async function prepare() {
@@ -67,24 +55,21 @@ export default function RootLayout() {
           console.error('Failed to register for notifications:', error);
         });
 
-        setIsReady(true);
-
         return cleanup;
       } catch (error) {
         console.error('Error during app initialization:', error);
         router.replace('/(tabs)');
-        setIsReady(true);
       }
     }
 
     if ((fontsLoaded || fontError) && !didRunPrepare) {
       didRunPrepare = true;
       prepare().then(() => {
+        setIsReady(true);
         SplashScreen.hideAsync();
       });
     }
   }, [fontsLoaded, fontError]);
-
 
   if (!fontsLoaded && !fontError) {
     return null;
