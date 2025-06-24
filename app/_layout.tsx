@@ -11,13 +11,10 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { setupNotificationListeners, registerForPushNotifications } from '@/lib/notifications';
-import { checkOnboardingStatus, getCachedOnboardingStatus } from '@/lib/userProfile';
 import { router } from 'expo-router';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
-let didRunPrepare = false;
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -33,37 +30,19 @@ export default function RootLayout() {
   useEffect(() => {
     async function prepare() {
       try {
-        let onboardingCompleted = await getCachedOnboardingStatus();
-
-        if (onboardingCompleted === null) {
-          onboardingCompleted = await checkOnboardingStatus();
-        }
-
-        if (!onboardingCompleted) {
-          router.replace('/onboarding');
-        } else {
-          router.replace('/(tabs)');
-        }
-
-        const cleanup = setupNotificationListeners();
-
-        registerForPushNotifications().then((deviceId) => {
-          if (deviceId) {
-            console.log('Device registered for notifications:', deviceId);
-          }
-        }).catch((error) => {
-          console.error('Failed to register for notifications:', error);
-        });
-
-        return cleanup;
+        // Simple initialization without complex async operations
+        // Remove notification and onboarding setup that was causing state issues
+        console.log('App initializing...');
+        
+        // Navigate to main app
+        router.replace('/(tabs)');
       } catch (error) {
         console.error('Error during app initialization:', error);
         router.replace('/(tabs)');
       }
     }
 
-    if ((fontsLoaded || fontError) && !didRunPrepare) {
-      didRunPrepare = true;
+    if (fontsLoaded || fontError) {
       prepare().then(() => {
         setIsReady(true);
         SplashScreen.hideAsync();
@@ -82,7 +61,6 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>

@@ -1,9 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import { useColorScheme } from 'react-native';
-import { Platform } from 'react-native';
+import { useColorScheme, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 
 type Theme = 'light' | 'dark' | 'system';
 type FontSize = 'small' | 'medium' | 'large';
@@ -74,13 +71,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const loadPreferences = async () => {
     try {
-      const savedTheme = Platform.OS === 'web'
-        ? await AsyncStorage.getItem('theme')
-        : await SecureStore.getItemAsync('theme');
-
-      const savedFontSize = Platform.OS === 'web'
-        ? await AsyncStorage.getItem('fontSize')
-        : await SecureStore.getItemAsync('fontSize');
+      const savedTheme = await AsyncStorage.getItem('theme');
+      const savedFontSize = await AsyncStorage.getItem('fontSize');
 
       if (savedTheme) setThemeState(savedTheme as Theme);
       if (savedFontSize) setFontSizeState(savedFontSize as FontSize);
@@ -91,31 +83,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = async (newTheme: Theme) => {
     try {
-      if (Platform.OS === 'web') {
-        await AsyncStorage.setItem('theme', newTheme);
-      } else {
-        await SecureStore.setItemAsync('theme', newTheme);
-      }
+      await AsyncStorage.setItem('theme', newTheme);
       setThemeState(newTheme);
     } catch (error) {
       console.log('Error saving theme:', error);
     }
   };
 
-
   const setFontSize = async (newFontSize: FontSize) => {
     try {
-      if (Platform.OS === 'web') {
-        await AsyncStorage.setItem('fontSize', newFontSize);
-      } else {
-        await SecureStore.setItemAsync('fontSize', newFontSize);
-      }
+      await AsyncStorage.setItem('fontSize', newFontSize);
       setFontSizeState(newFontSize);
     } catch (error) {
       console.log('Error saving font size:', error);
     }
   };
-
 
   const isDark = theme === 'system'
     ? systemColorScheme === 'dark'

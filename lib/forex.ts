@@ -1,15 +1,21 @@
-// Forex price API integration
-export interface ForexPrice {
-  pair: string;
-  price: number;
-  change: number;
-  change_percent: number;
-  timestamp: string;
+// Forex trading utilities and constants
+
+export interface ForexPair {
+  symbol: string;
+  name: string;
+  pipValue: number;
+  digits: number;
+}
+
+export interface Language {
+  code: string;
+  name: string;
+  flag: string;
 }
 
 export interface PipCalculatorResult {
-  pipValue: number;
   totalPips: number;
+  pipValue: number;
   profit: number;
 }
 
@@ -25,157 +31,15 @@ export interface PnLResult {
   pips: number;
 }
 
-// Cache for forex prices to avoid rate limits
-const priceCache = new Map<string, { price: number; timestamp: number }>();
-const CACHE_DURATION = 30000; // 30 seconds
-
-export async function getForexPrice(pair: string): Promise<number> {
-  const cacheKey = pair.replace('/', '');
-  const cached = priceCache.get(cacheKey);
-
-  // Return cached price if still valid
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.price;
-  }
-
-  try {
-    // Use ExchangeRate.host API (free, no API key required)
-    const [base, quote] = pair.split('/');
-    const response = await fetch(
-      `https://api.exchangerate.host/latest?base=${base}&symbols=${quote}`
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch forex price');
-    }
-
-    const data = await response.json();
-    const price = data.rates[quote];
-
-    if (!price) {
-      throw new Error('Price not found for pair');
-    }
-
-    // Cache the price
-    priceCache.set(cacheKey, { price, timestamp: Date.now() });
-
-    return price;
-  } catch (error) {
-    console.error('Error fetching forex price:', error);
-
-    // Return mock prices for common pairs if API fails
-    const mockPrices: Record<string, number> = {
-      'XAUUSD': 2345.67,
-      'XAGUSD': 29.45,
-      'EURUSD': 1.0867,
-      'GBPUSD': 1.2634,
-      'USDJPY': 149.67,
-      'AUDUSD': 0.6542,
-    };
-
-    return mockPrices[cacheKey] || 1.0;
-  }
-}
-
-export function calculatePipValue(
-  pair: string,
-  lotSize: number,
-  accountCurrency: string = 'USD'
-): number {
-  // Standard pip values for major pairs
-  const pipValues: Record<string, number> = {
-    'EURUSD': 10,
-    'GBPUSD': 10,
-    'AUDUSD': 10,
-    'NZDUSD': 10,
-    'USDCAD': 10,
-    'USDCHF': 10,
-    'USDJPY': 10,
-    'XAUUSD': 10,
-    'XAGUSD': 50,
-  };
-
-  const basePipValue = pipValues[pair.replace('/', '')] || 10;
-  return basePipValue * lotSize;
-}
-
-export function calculatePips(
-  pair: string,
-  entryPrice: number,
-  exitPrice: number,
-  type: 'BUY' | 'SELL'
-): PipCalculatorResult {
-  const pairKey = pair.replace('/', '');
-
-  // Determine pip size based on pair
-  let pipSize = 0.0001; // 4-decimal pairs
-  if (pairKey.includes('JPY')) {
-    pipSize = 0.01; // 2-decimal pairs
-  } else if (pairKey.includes('XAU') || pairKey.includes('XAG')) {
-    pipSize = 0.01; // Gold/Silver
-  }
-
-  let priceDiff = type === 'BUY' ? exitPrice - entryPrice : entryPrice - exitPrice;
-  const totalPips = priceDiff / pipSize;
-
-  return {
-    pipValue: pipSize,
-    totalPips: Math.round(totalPips * 10) / 10,
-    profit: priceDiff,
-  };
-}
-
-export function calculateLotSize(
-  accountBalance: number,
-  riskPercent: number,
-  stopLossPips: number,
-  pipValue: number
-): LotSizeResult {
-  const riskAmount = (accountBalance * riskPercent) / 100;
-  const lotSize = riskAmount / (stopLossPips * pipValue);
-
-  return {
-    lotSize: Math.round(lotSize * 100) / 100,
-    positionSize: lotSize * 100000, // Standard lot size
-    margin: riskAmount,
-  };
-}
-
-export function calculatePnL(
-  pair: string,
-  lotSize: number,
-  entryPrice: number,
-  exitPrice: number,
-  type: 'BUY' | 'SELL'
-): PnLResult {
-  const pipResult = calculatePips(pair, entryPrice, exitPrice, type);
-  const pipValue = calculatePipValue(pair, lotSize);
-  const profit = pipResult.totalPips * pipValue;
-  const profitPercent = (profit / (entryPrice * lotSize * 100000)) * 100;
-
-  return {
-    profit: Math.round(profit * 100) / 100,
-    profitPercent: Math.round(profitPercent * 100) / 100,
-    pips: pipResult.totalPips,
-  };
-}
-
+// Supported trading pairs
 export const SUPPORTED_PAIRS = [
-  'XAU/USD',
-  'XAG/USD',
-  'EUR/USD',
-  'GBP/USD',
-  'USD/JPY',
-  'USD/CAD',
-  'USD/CHF',
-  'AUD/USD',
-  'NZD/USD',
-  'EUR/GBP',
-  'EUR/JPY',
-  'GBP/JPY',
+  'XAU/USD', 'XAG/USD', 'EUR/USD', 'GBP/USD', 'USD/JPY',
+  'AUD/USD', 'USD/CAD', 'NZD/USD', 'EUR/GBP', 'GBP/JPY',
+  'EUR/JPY', 'AUD/JPY', 'CHF/JPY', 'CAD/JPY', 'USD/CHF'
 ];
 
-export const LANGUAGES = [
+// Language options
+export const LANGUAGES: Language[] = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
   { code: 'es', name: 'Español', flag: '🇪🇸' },
   { code: 'fr', name: 'Français', flag: '🇫🇷' },
@@ -189,3 +53,123 @@ export const LANGUAGES = [
   { code: 'ar', name: 'العربية', flag: '🇸🇦' },
   { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
 ];
+
+// Forex pair configurations
+const FOREX_PAIRS: Record<string, ForexPair> = {
+  'XAU/USD': { symbol: 'XAU/USD', name: 'Gold', pipValue: 0.01, digits: 2 },
+  'XAG/USD': { symbol: 'XAG/USD', name: 'Silver', pipValue: 0.001, digits: 3 },
+  'EUR/USD': { symbol: 'EUR/USD', name: 'Euro/US Dollar', pipValue: 0.0001, digits: 4 },
+  'GBP/USD': { symbol: 'GBP/USD', name: 'British Pound/US Dollar', pipValue: 0.0001, digits: 4 },
+  'USD/JPY': { symbol: 'USD/JPY', name: 'US Dollar/Japanese Yen', pipValue: 0.01, digits: 2 },
+  'AUD/USD': { symbol: 'AUD/USD', name: 'Australian Dollar/US Dollar', pipValue: 0.0001, digits: 4 },
+  'USD/CAD': { symbol: 'USD/CAD', name: 'US Dollar/Canadian Dollar', pipValue: 0.0001, digits: 4 },
+  'NZD/USD': { symbol: 'NZD/USD', name: 'New Zealand Dollar/US Dollar', pipValue: 0.0001, digits: 4 },
+  'EUR/GBP': { symbol: 'EUR/GBP', name: 'Euro/British Pound', pipValue: 0.0001, digits: 4 },
+  'GBP/JPY': { symbol: 'GBP/JPY', name: 'British Pound/Japanese Yen', pipValue: 0.01, digits: 2 },
+};
+
+// Get forex price (mock implementation for demo)
+export async function getForexPrice(pair: string): Promise<number> {
+  // In a real app, this would fetch from a live API
+  const mockPrices: Record<string, number> = {
+    'XAU/USD': 2345.67 + (Math.random() - 0.5) * 20,
+    'XAG/USD': 29.45 + (Math.random() - 0.5) * 2,
+    'EUR/USD': 1.0867 + (Math.random() - 0.5) * 0.01,
+    'GBP/USD': 1.2634 + (Math.random() - 0.5) * 0.01,
+    'USD/JPY': 149.67 + (Math.random() - 0.5) * 1,
+    'AUD/USD': 0.6542 + (Math.random() - 0.5) * 0.01,
+    'USD/CAD': 1.3456 + (Math.random() - 0.5) * 0.01,
+    'NZD/USD': 0.6123 + (Math.random() - 0.5) * 0.01,
+    'EUR/GBP': 0.8601 + (Math.random() - 0.5) * 0.01,
+    'GBP/JPY': 189.45 + (Math.random() - 0.5) * 2,
+  };
+
+  return mockPrices[pair] || 1.0000;
+}
+
+// Calculate pips between two prices
+export function calculatePips(
+  pair: string,
+  entryPrice: number,
+  exitPrice: number,
+  type: 'BUY' | 'SELL'
+): PipCalculatorResult {
+  const pairConfig = FOREX_PAIRS[pair];
+  if (!pairConfig) {
+    throw new Error(`Unsupported pair: ${pair}`);
+  }
+
+  const priceDiff = type === 'BUY' ? exitPrice - entryPrice : entryPrice - exitPrice;
+  const totalPips = Math.round(priceDiff / pairConfig.pipValue);
+  const pipValue = pairConfig.pipValue;
+  const profit = priceDiff;
+
+  return {
+    totalPips,
+    pipValue,
+    profit,
+  };
+}
+
+// Calculate lot size based on risk management
+export function calculateLotSize(
+  accountBalance: number,
+  riskPercent: number,
+  stopLossPips: number,
+  pipValue: number
+): LotSizeResult {
+  const riskAmount = (accountBalance * riskPercent) / 100;
+  const lotSize = riskAmount / (stopLossPips * pipValue);
+  const positionSize = lotSize * 100000; // Standard lot size
+  const margin = riskAmount;
+
+  return {
+    lotSize: Math.round(lotSize * 100) / 100,
+    positionSize: Math.round(positionSize),
+    margin: Math.round(margin * 100) / 100,
+  };
+}
+
+// Calculate profit and loss
+export function calculatePnL(
+  pair: string,
+  lotSize: number,
+  entryPrice: number,
+  exitPrice: number,
+  type: 'BUY' | 'SELL'
+): PnLResult {
+  const pairConfig = FOREX_PAIRS[pair];
+  if (!pairConfig) {
+    throw new Error(`Unsupported pair: ${pair}`);
+  }
+
+  const priceDiff = type === 'BUY' ? exitPrice - entryPrice : entryPrice - exitPrice;
+  const pips = Math.round(priceDiff / pairConfig.pipValue);
+  const profit = priceDiff * lotSize * 100000; // Standard lot calculation
+  const profitPercent = (profit / (entryPrice * lotSize * 100000)) * 100;
+
+  return {
+    profit: Math.round(profit * 100) / 100,
+    profitPercent: Math.round(profitPercent * 100) / 100,
+    pips,
+  };
+}
+
+// Format currency based on pair
+export function formatPrice(pair: string, price: number): string {
+  const pairConfig = FOREX_PAIRS[pair];
+  if (!pairConfig) {
+    return price.toFixed(4);
+  }
+  return price.toFixed(pairConfig.digits);
+}
+
+// Get pair configuration
+export function getPairConfig(pair: string): ForexPair | null {
+  return FOREX_PAIRS[pair] || null;
+}
+
+// Validate trading pair
+export function isValidPair(pair: string): boolean {
+  return SUPPORTED_PAIRS.includes(pair);
+}

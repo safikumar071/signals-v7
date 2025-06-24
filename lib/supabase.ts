@@ -1,35 +1,42 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+// Use demo values if environment variables are not set
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://demo-project.supabase.co';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'demo-anon-key';
 
-if (!SUPABASE_URL) {
-  throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL environment variable');
-}
+// Create a safe fetch function that handles missing environment variables
+const safeFetch = async (url: string, options: any) => {
+  // If using demo values, return mock data instead of making real requests
+  if (SUPABASE_URL.includes('demo-project') || SUPABASE_ANON_KEY === 'demo-anon-key') {
+    console.log('Using demo mode - no real Supabase connection');
+    throw new Error('Demo mode - no real connection');
+  }
 
-if (!SUPABASE_ANON_KEY) {
-  throw new Error('Missing EXPO_PUBLIC_SUPABASE_ANON_KEY environment variable');
-}
-
-const customFetch = async (url: string, options: any) => {
-  options.headers = {
-    ...options.headers,
-    apikey: SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-  };
-  return fetch(url, options);
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+  });
 };
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: false },
   global: {
-    fetch: customFetch, // ensures apikey is injected
+    fetch: safeFetch,
   },
 });
 
 // Add connection test function
 export async function testSupabaseConnection(): Promise<boolean> {
   try {
+    // If using demo values, return false
+    if (SUPABASE_URL.includes('demo-project') || SUPABASE_ANON_KEY === 'demo-anon-key') {
+      return false;
+    }
+
     const { data, error } = await supabase.from('signals').select('count').limit(1);
     return !error;
   } catch (error) {

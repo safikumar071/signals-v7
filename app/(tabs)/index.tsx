@@ -9,13 +9,10 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 import { TrendingUp, TrendingDown, Settings2, Bell, RefreshCw } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import AssetSwitcher from '../../components/AssetSwitcher';
 import TimeframeSwitcher from '../../components/TimeframeSwitcher';
-import NotificationSheet from '@/components/NotificationSheet';
-import SetupGuide from '@/components/SetupGuide';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import MarketOverview from '@/components/MarketOverview';
 import { fetchMarketData, fetchTechnicalIndicators, fetchEconomicEvents, MarketData, TechnicalIndicator, EconomicEvent } from '../../lib/database';
@@ -27,8 +24,6 @@ export default function HomeScreen() {
   const { colors, fontSizes } = useTheme();
   const [selectedAsset, setSelectedAsset] = useState<'XAU/USD' | 'XAG/USD'>('XAU/USD');
   const [timeframe, setTimeframe] = useState('1H');
-  const [setupGuideVisible, setSetupGuideVisible] = useState(false);
-  const [notificationVisible, setNotificationVisible] = useState(false);
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const [technicalIndicators, setTechnicalIndicators] = useState<TechnicalIndicator[]>([]);
   const [economicEvents, setEconomicEvents] = useState<EconomicEvent[]>([]);
@@ -84,8 +79,17 @@ export default function HomeScreen() {
 
   const getTradingViewHTML = (symbol: string) => `
     <html>
-      <body style="margin:0;padding:0;">
-        <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_f9b65&symbol=${symbol.replace("/", "")}&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=light&style=1&timezone=exchange" style="width:100%;height:100%;border:none;"></iframe>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin:0;padding:0;background:${colors.surface};">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${colors.text};font-family:Inter,sans-serif;">
+          <div style="text-align:center;">
+            <h3 style="margin:0 0 10px 0;">Trading Chart</h3>
+            <p style="margin:0;opacity:0.7;">${symbol} Chart View</p>
+            <p style="margin:10px 0 0 0;font-size:14px;opacity:0.5;">Connect to TradingView for live charts</p>
+          </div>
+        </div>
       </body>
     </html>
   `;
@@ -190,6 +194,108 @@ export default function HomeScreen() {
       color: colors.text,
       fontFamily: 'Inter-Medium',
     },
+    chartContainer: {
+      height: 300,
+      marginHorizontal: 20,
+      marginBottom: 24,
+      borderRadius: 16,
+      overflow: 'hidden',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sectionTitle: {
+      fontSize: fontSizes.subtitle,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 16,
+      fontFamily: 'Inter-Bold',
+    },
+    indicatorCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    indicatorHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    indicatorName: {
+      fontSize: fontSizes.medium,
+      color: colors.text,
+      fontFamily: 'Inter-Medium',
+    },
+    indicatorValue: {
+      fontSize: fontSizes.medium,
+      fontFamily: 'Inter-Medium',
+    },
+    indicatorStatus: {
+      fontSize: fontSizes.small,
+      fontFamily: 'Inter-Regular',
+    },
+    eventCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    eventHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    eventTime: {
+      fontSize: fontSizes.medium,
+      color: colors.primary,
+      fontFamily: 'Inter-Medium',
+    },
+    impactBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    impactText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Inter-SemiBold',
+    },
+    eventContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 8,
+    },
+    currencyBadge: {
+      fontSize: fontSizes.small,
+      color: colors.primary,
+      backgroundColor: `${colors.primary}20`,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      fontFamily: 'Inter-Medium',
+    },
+    eventName: {
+      fontSize: fontSizes.medium,
+      color: colors.text,
+      flex: 1,
+      fontFamily: 'Inter-Regular',
+    },
+    eventDetails: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    eventDetail: {
+      fontSize: fontSizes.small,
+      color: colors.textSecondary,
+      fontFamily: 'Inter-Regular',
+    },
   });
 
   return (
@@ -200,16 +306,10 @@ export default function HomeScreen() {
           <Text style={styles.subtitle}>Live Trading Opportunities</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => setSetupGuideVisible(true)}
-          >
+          <TouchableOpacity style={styles.actionButton}>
             <Settings2 size={24} color={colors.text} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => setNotificationVisible(true)}
-          >
+          <TouchableOpacity style={styles.actionButton}>
             <Bell size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -276,104 +376,80 @@ export default function HomeScreen() {
           onTimeframeChange={setTimeframe}
         />
 
-        {Platform.OS === 'web' ? (
-          <View
-            style={{
-              height: 300,
-              marginHorizontal: 20,
-              marginBottom: 24,
-              borderRadius: 16,
-              overflow: 'hidden',
-              backgroundColor: colors.surface,
-            }}
-          >
+        {/* Chart Container */}
+        <View style={styles.chartContainer}>
+          {Platform.OS === 'web' ? (
             <iframe
               srcDoc={getTradingViewHTML(selectedAsset)}
               style={{ width: '100%', height: '100%', border: 'none' }}
-              sandbox="allow-scripts allow-same-origin"
             />
-          </View>
-        ) : (
-          <View
-            style={{
-              height: 300,
-              marginHorizontal: 20,
-              marginBottom: 24,
-              borderRadius: 16,
-              overflow: 'hidden',
-              backgroundColor: colors.surface,
-            }}
-          >
-            <WebView
-              source={{ html: getTradingViewHTML(selectedAsset) }}
-              style={{ flex: 1 }}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              startInLoadingState={true}
-              scalesPageToFit={true}
-            />
-          </View>
-        )}
+          ) : (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: colors.text, fontSize: fontSizes.medium }}>
+                Chart View - {selectedAsset}
+              </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSizes.small, marginTop: 8 }}>
+                Connect to TradingView for live charts
+              </Text>
+            </View>
+          )}
+        </View>
 
+        {/* Technical Indicators */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
-          <Text style={{ fontSize: fontSizes.subtitle, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>Technical Indicators</Text>
+          <Text style={styles.sectionTitle}>Technical Indicators</Text>
           <View style={{ gap: 12 }}>
-            {technicalIndicators.map((indicator, index) => (
-              <View key={indicator.id} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: fontSizes.medium, color: colors.text }}>{indicator.indicator_name}</Text>
-                  <Text style={{ fontSize: fontSizes.medium, color: indicator.color }}>{indicator.value}</Text>
+            {technicalIndicators.map((indicator) => (
+              <View key={indicator.id} style={styles.indicatorCard}>
+                <View style={styles.indicatorHeader}>
+                  <Text style={styles.indicatorName}>{indicator.indicator_name}</Text>
+                  <Text style={[styles.indicatorValue, { color: indicator.color }]}>
+                    {indicator.value}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: fontSizes.small, color: indicator.color }}>{indicator.status}</Text>
+                <Text style={[styles.indicatorStatus, { color: indicator.color }]}>
+                  {indicator.status}
+                </Text>
               </View>
             ))}
           </View>
         </View>
 
+        {/* Economic Events */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
-          <Text style={{ fontSize: fontSizes.subtitle, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>Today's Economic Events</Text>
+          <Text style={styles.sectionTitle}>Today's Economic Events</Text>
           <View style={{ gap: 12 }}>
             {economicEvents.map(event => (
-              <View key={event.id} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={{ fontSize: fontSizes.medium, color: colors.primary }}>{event.time}</Text>
-                  <View style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    borderRadius: 4,
-                    backgroundColor:
-                      event.impact === 'high'
-                        ? `${colors.error}33`
-                        : event.impact === 'medium'
-                          ? `${colors.warning}33`
-                          : `${colors.textSecondary}33`,
-                  }}>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: colors.text }}>{event.impact.toUpperCase()}</Text>
+              <View key={event.id} style={styles.eventCard}>
+                <View style={styles.eventHeader}>
+                  <Text style={styles.eventTime}>{event.time}</Text>
+                  <View style={[
+                    styles.impactBadge,
+                    {
+                      backgroundColor:
+                        event.impact === 'high'
+                          ? `${colors.error}33`
+                          : event.impact === 'medium'
+                            ? `${colors.warning}33`
+                            : `${colors.textSecondary}33`,
+                    }
+                  ]}>
+                    <Text style={styles.impactText}>{event.impact.toUpperCase()}</Text>
                   </View>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <Text style={{ fontSize: fontSizes.small, color: colors.primary, backgroundColor: `${colors.primary}20`, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>{event.currency}</Text>
-                  <Text style={{ fontSize: fontSizes.medium, color: colors.text, flex: 1 }}>{event.event_name}</Text>
+                <View style={styles.eventContent}>
+                  <Text style={styles.currencyBadge}>{event.currency}</Text>
+                  <Text style={styles.eventName}>{event.event_name}</Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: fontSizes.small, color: colors.textSecondary }}>Forecast: {event.forecast}</Text>
-                  <Text style={{ fontSize: fontSizes.small, color: colors.textSecondary }}>Previous: {event.previous}</Text>
+                <View style={styles.eventDetails}>
+                  <Text style={styles.eventDetail}>Forecast: {event.forecast}</Text>
+                  <Text style={styles.eventDetail}>Previous: {event.previous}</Text>
                 </View>
               </View>
             ))}
           </View>
         </View>
       </ScrollView>
-      
-      <NotificationSheet
-        visible={notificationVisible}
-        onClose={() => setNotificationVisible(false)}
-      />
-
-      <SetupGuide
-        visible={setupGuideVisible}
-        onClose={() => setSetupGuideVisible(false)}
-      />
     </SafeAreaView>
   );
 }
